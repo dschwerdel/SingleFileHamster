@@ -22,8 +22,10 @@ Long term goals:
 - maybe show some graphs, but this goes to an extra file
 
 Short term goals:
-- clean up and comment the code
+- clean up and comment the code (don't worry we will refactor it later)
 - save the user created job categories in the localstorage, display it if they're there. (Actually this works somewhat. But the dropdown menu is not refreshing properly, so I commented it out.)
 - work on a nice design. 
 - fix the display of the history, show a total of time per day
 - just make it better
+
+Proudly but stupidly made with gedit
