@@ -223,22 +223,18 @@ async function stoptimer(e){
 }
 
 function addToLocalStorage(art, time=0) {
-	if (time === 0) {time = new Date();raw_time = new Date();}	
-
+	if (time === 0) {time = new Date();}
 	var dateforDB = time.getFullYear() +'-'+ (1+ time.getMonth()) +'-'+ time.getDate();
-	var timeforDB = time.getHours()+':'+time.getMinutes()+':'+time.getSeconds();
 	
 	if (localStorage.length !== 0) {
-		
 		var db = JSON.parse(localStorage.getItem("hamsterTimeData"));
 		var key = 'hmstr_'+dateforDB;
-
-		if (!(db[key])) {db[key] = [];}
 		
-		db[key].push([{ "timestamp": raw_time  ,  "job": art }]);
+		if (!(db[key])) {db[key] = [];}
+		db[key].push([{ "timestamp": time  ,  "job": art }]);
 		localStorage.setItem("hamsterTimeData", JSON.stringify(db));
 	} else {
- 		var dbEntry = '{ "hmstr_'+dateforDB+'" : [[{ "timestamp":"'+raw_time.toISOString()+'" , "job":"'+art+'" }]] }';
+ 		var dbEntry = '{ "hmstr_'+dateforDB+'" : [[{ "timestamp":"'+time.toISOString()+'" , "job":"'+art+'" }]] }';
 		const obj = JSON.parse(dbEntry);
 		localStorage.setItem("hamsterTimeData", JSON.stringify(obj));
 	}
