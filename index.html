@@ -97,14 +97,8 @@ function check_state() {
 		var recent_times = JSON.parse(localStorage.getItem("hamsterTimeData"));
 		var last_record = recent_times[Object.keys(recent_times)[Object.keys(recent_times).length - 1]];		
 		var last_workset = last_record[Object.keys(last_record)[Object.keys(last_record).length - 1]];
-		//console.log(last_workset);
-	
-	console.log(localStorage);
-//		if (last.workset.job
 		var status = last_workset[0].job;
-		//console.log(status);
 		var status_full = last_workset[0];
-		//console.log(status_full);
 		
 		if (localStorage.getItem("hmstr_00txt")) {
 			changeSelection = document.getElementById('selectbox');
