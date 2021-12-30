@@ -11,21 +11,16 @@
 html, body {height: 100%; width: 100%;}
 body {padding:0px;margin:0px;}
 #container {padding:0.5em;width:95%;height:95%;margin: 0 auto;
-display: grid;
-grid-template-columns: 1fr;
-grid-template-rows: 0.5fr repeat(3, 1fr);
-}
-#feedback, #input, #times, #head {display:grid;place-items:center;
- display: grid; grid-template-columns: 1fr 1fr;
-}
+   display: grid; grid-template-columns: 1fr;
+   grid-template-rows: 0.5fr repeat(3, 1fr);}
+#feedback, #input, #times {display:grid;place-items:center;
+   display: grid; grid-template-columns: 1fr 1fr;}
 #anim {transform-origin: top center; animation: spin 5s infinite;
-}
+   position: absolute;top: 10%; left: 20%;}
 @keyframes spin {
    from {transform:rotate(0deg);}
-   to {transform:rotate(359deg);}
-}
-
-#head {display:grid;place-items:center;}
+   to {transform:rotate(359deg);} }
+#clock {display:grid;place-items:center;}
 #start {display:grid;place-items:center;}
 #pause {display:grid;place-items:center;}
 button {width:144px;height:72px;}
@@ -38,15 +33,282 @@ button {width:144px;height:72px;}
 .select-editable input { position:absolute; top:0px; left:0px; width:132px; padding:1px;
      font-size:30px; border:none; }
 .select-editable select:focus, .select-editable input:focus { outline:none; }
-
 </style>
 </head>
 <body>
 
 <div id="container">
 	<div id="head">
-		<div id="anim">
-		<svg
+		<div id="clock">
+		</div>
+	</div>
+	<div id="feedback">
+		<div id="times">
+			<div>Last:</div>
+			<div id="time"></div>
+			<div>Pause:</div>
+			<div id="pause"></div>
+			<div>Art:</div>
+			<div id="art"></div>
+		</div>
+		<div id="chooseer">
+			<div class="select-editable">
+				<form class='choser'>
+					<select onchange="this.nextElementSibling.value=this.value" id="selectbox">
+						<option value=""></option>
+						<option value="Arbeit">Arbeit</option>
+						<option value="Sun">Sun</option>
+						<option value="Fun">Fun</option>
+					</select>
+					<input type="text" id="selecttext" name="select" value="" />
+				</form>
+			</div>
+		</div>
+	</div>
+	<div id="input">
+		<div id="start">
+			<a href="" onclick="starttimer(event)"><button>Start</button></a>
+		</div>
+		<div id="pause_btn">
+			<a href="" onclick="pausetimer(event)"><button>Pause</button></a>
+		</div>
+	</div>
+	<div id="history">
+		<form action="index.php" method="post">
+			<input type="submit" name="reset" value="Reset" onclick="localStorage.clear();location.reload();return false;">
+		</form>
+	</div>
+</div>
+
+</body>
+<script>
+// Start all the things
+window.onload = init();
+function init() {
+	displayClock();
+	check_state();
+	show_history();
+}
+
+
+function check_state() {
+	if (localStorage.length) {
+	
+		var recent_times = JSON.parse(localStorage.getItem("hamsterTimeData"));
+		var last_record = recent_times[Object.keys(recent_times)[Object.keys(recent_times).length - 1]];		
+		var last_workset = last_record[Object.keys(last_record)[Object.keys(last_record).length - 1]];
+		//console.log(last_workset);
+	
+	console.log(localStorage);
+//		if (last.workset.job
+		var status = last_workset[0].job;
+		//console.log(status);
+		var status_full = last_workset[0];
+		//console.log(status_full);
+		
+		if (localStorage.getItem("hmstr_00txt")) {
+			changeSelection = document.getElementById('selectbox');
+			txts = localStorage.getItem("hmstr_00txt");
+			var einz = txts.split(',');
+			var selct = `<option value=""></option>`;
+			for (i=0;i<einz.length;i++){
+				var selct = selct + `<option value="`+einz[i]+`"></option>`;
+				//console.log(einz[i]);
+			}
+			// ist dann nicth zu sehen, geht aber
+			//changeSelection.innerHTML = selct;
+					
+		}
+		
+		switch (status) {
+			case 'Pause':
+				console.log('Mahlzeit');
+				runningPauseTimer(status_full, status);
+			break;
+			case 'Stop':
+				showLastTimer(status_full, status);
+			break;
+			default:			
+				runningTimer(status_full, status);
+		}
+	}
+
+
+}
+
+
+function runningPauseTimer(last, art) {
+	changetoStop = document.getElementById('pause_btn');
+	changetoStop.innerHTML = `<a href="" onclick="pauseEnde(event)"><button>Pause Ende</button></a>`;
+	var startDate = new Date(Object.values(last)[0]);
+	var pausi_time = calcTime(Object.values(last)[0]);
+	addArtTime = document.getElementById('art');
+	addArtTime.innerHTML = art;
+	addArtTimeTime = document.getElementById('pause');
+	addArtTimeTime.innerHTML = startDate.toLocaleTimeString() +" ("+ pausi_time +")";
+
+}
+function calcTime(start, stop='now') {
+	var startDate = new Date(start);
+	// if now sonst kein calc von diff
+	var endDate = new Date();
+	var differenz = (endDate.getTime() - startDate.getTime());
+	var worki_time = leadingZero(parseInt(differenz/1000/60/60)%24) +':'+ leadingZero(parseInt(differenz/1000/60)%60);
+	return worki_time;
+}
+//Fill leading 0
+function leadingZero(wert) {
+  if (wert < 10) return "0" + parseInt(wert);
+  else return parseInt(wert);
+}
+
+
+function pauseEnde(e) {
+	e.preventDefault(); 
+	starttimer(event);
+}
+
+function runningTimer(last, art) {
+	changetoStop = document.getElementById('start');
+	changetoStop.innerHTML = `<a href="" onclick="stoptimer(event)"><button>Stop</button></a>`;	
+
+	var startDate = new Date(Object.values(last)[0]);
+	var worki_time = calcTime(Object.values(last)[0]);		
+	addArtTime = document.getElementById('art');
+	addArtTime.innerHTML = art;
+	addArtTimeTime = document.getElementById('time');
+	addArtTimeTime.innerHTML = startDate.toLocaleTimeString() +" ("+ worki_time +")";
+}
+
+async function starttimer(e) {
+	e.preventDefault(); 
+
+	var hand_text = document.getElementById("selecttext").value;
+	if (hand_text != '') {
+		var text = hand_text;
+		addHandText(hand_text);
+	} else {
+		var sel = document.getElementById("selectbox");
+		var text= sel.options[sel.selectedIndex].text;
+	}
+	changetoStop = document.getElementById('start');
+	changetoStop.innerHTML = `<a href="" onclick="stoptimer(event)"><button>Stop</button></a>`;
+
+	if(text == '') {text = 'Arbeit';}
+	time = new Date().toLocaleTimeString();
+	addArtTime = document.getElementById('art');
+	addArtTime.innerHTML = text;
+	addArtTimeTime = document.getElementById('time');
+	addArtTimeTime.innerHTML = time;
+
+	addToLocalStorage(text);
+	location.reload();
+	return false;
+}
+
+async function pausetimer(e) {
+	e.preventDefault(); 
+	
+	addToLocalStorage('Pause');
+	location.reload();
+	return false;
+}
+
+async function stoptimer(e){
+	e.preventDefault();
+	changetoStart = document.getElementById('start');
+	changetoStart.innerHTML = `<a href="" onclick="starttimer(event)"><button>Start</button></a>`;
+
+	time = new Date().toLocaleTimeString();
+	addArtTimeTime = document.getElementById('time');
+	addArtTimeTime.insertAdjacentHTML('beforeend', ' - ' + time);
+
+	addToLocalStorage('Stop');
+	location.reload();
+	return false;
+}
+
+function addToLocalStorage(art, time=0) {
+	if (time === 0) {time = new Date();raw_time = new Date();}	
+
+	var dateforDB = time.getFullYear() +'-'+ (1+ time.getMonth()) +'-'+ time.getDate();
+	var timeforDB = time.getHours()+':'+time.getMinutes()+':'+time.getSeconds();
+	
+	if (localStorage.length !== 0) {
+		
+		var db = JSON.parse(localStorage.getItem("hamsterTimeData"));
+		var key = 'hmstr_'+dateforDB;
+
+		if (!(db[key])) {db[key] = [];}
+		
+		db[key].push([{ "timestamp": raw_time  ,  "job": art }]);
+		localStorage.setItem("hamsterTimeData", JSON.stringify(db));
+	} else {
+ 		var dbEntry = '{ "hmstr_'+dateforDB+'" : [[{ "timestamp":"'+raw_time.toISOString()+'" , "job":"'+art+'" }]] }';
+		const obj = JSON.parse(dbEntry);
+		localStorage.setItem("hamsterTimeData", JSON.stringify(obj));
+	}
+}
+
+function addHandText(hand_text) {
+	if (localStorage.getItem("hmstr_00txt")) {
+		var txts = localStorage.getItem("hmstr_00txt");
+		var einz = txts.split(',');
+		
+		if(einz.indexOf(hand_text) == -1) {  
+			 var txts = txts + ',' + hand_text;
+		}
+	} else {
+		var txts = "Arbeit,Sun,Fun," + hand_text;
+	}
+	localStorage.setItem("hmstr_00txt_", txts);
+}
+
+
+//show the all the data saved in the local storage
+function show_history() {
+	var ret ='';
+	if (localStorage.length) {
+		var recent_times = JSON.parse(localStorage.getItem("hamsterTimeData"));
+		var first = 0; var last = 0; var recent = 0; var timeu = 0; var totl = 0;
+
+		Object.keys(recent_times).forEach(function(key) {
+	
+	 		recent_times[key].slice().reverse().forEach(function(job){
+				var ret_date = new Date(Object.values(Object.values(job)[0])[0]);
+				if (first != 0) {
+					recent = ret_date;
+					timeu = last - recent;
+				} 
+				first = 1;
+				last = ret_date;
+				var worki_time = leadingZero(parseInt(timeu/1000/60/60)%24) +':'+ leadingZero(parseInt(timeu/1000/60)%60);
+				ret = ret 
+				+ ret_date.toLocaleDateString() + " "
+				+ ret_date.toLocaleTimeString() + " "
+				+ Object.values(Object.values(job)[0])[1] + " (" + worki_time + ") " 
+				+ "<br>";
+			});
+		});
+	}
+	var histo = document.getElementById('history');
+	if(histo){
+		histo.insertAdjacentHTML('beforeend', ret);
+	}
+}
+//Let the clock tick, refresh every second 
+function displayClock(){
+	var display = new Date().toLocaleTimeString();
+	var clock = document.getElementById('clock');
+	if(clock){
+		clock.innerHTML = display + ' Uhr';
+	}
+	setTimeout(displayClock, 1000);  
+}
+
+</script>
+<div id="anim">
+   <svg
    version="1.1"
    id="svg2"
    width="80"
@@ -614,333 +876,7 @@ YII=
 "
        id="image10" />
   </g>
-</svg>
-		</div>
-		<div id="clock">
-		</div>
-	</div>
-	<div id="feedback">
-		<div id="times">
-			<div>Last:</div>
-			<div id="time"></div>
-			<div>Pause:</div>
-			<div id="pause"></div>
-			<div>Art:</div>
-			<div id="art"></div>
-		</div>
-		<div id="chooseer">
-			<div class="select-editable">
-				<form class='choser'>
-					<select onchange="this.nextElementSibling.value=this.value" id="selectbox">
-						<option value=""></option>
-						<option value="Arbeit">Arbeit</option>
-						<option value="Sun">Sun</option>
-						<option value="Fun">Fun</option>
-					</select>
-					<input type="text" id="selecttext" name="select" value="" />
-				</form>
-			</div>
-		</div>
-	</div>
-	<div id="input">
-		<div id="start">
-			<a href="" onclick="starttimer(event)"><button>Start</button></a>
-		</div>
-		<div id="pause_btn">
-			<a href="" onclick="pausetimer(event)"><button>Pause</button></a>
-		</div>
-	</div>
-	<div id="history">
-		<form action="index.php" method="post">
-			<input type="submit" name="reset" value="Reset" onclick="localStorage.clear();location.reload();return false;">
-		</form>
-	</div>
+  </svg>
 </div>
-
-</body>
-<script>
-// Start all the things
-window.onload = init();
-function init() {
-	displayClock();
-	check_state();
-	show_history();
-}
-
-/* TODO
-- refresh von selectbox, selectbox in eigne function raus aus checkstate
-- Selectbox Jobs auch in JSON bringen
-- selectbox lauffähig
-- sicherstellen, dass auch die Zeiten Sortiert in die DB gehen
-- Zeit funktionen erstellen
-- mehr Timer einbaune (auch in History)
-- autorefresh
-- 
-- Sort localStor weg, 
-- strpad console.log(str1.padStart(2, '0'));
-- PAUSE aktivieren
-- Design check
-- 
-*/
-
-function check_state() {
-	if (localStorage.length) {
 	
-		var recent_times = JSON.parse(localStorage.getItem("hamsterTimeData"));
-		var last_record = recent_times[Object.keys(recent_times)[Object.keys(recent_times).length - 1]];		
-		var last_workset = last_record[Object.keys(last_record)[Object.keys(last_record).length - 1]];
-		//console.log(last_workset);
-	
-	console.log(localStorage);
-//		if (last.workset.job
-		var status = last_workset[0].job;
-		//console.log(status);
-		var status_full = last_workset[0];
-		//console.log(status_full);
-		
-		if (localStorage.getItem("hmstr_00txt")) {
-			changeSelection = document.getElementById('selectbox');
-			txts = localStorage.getItem("hmstr_00txt");
-			var einz = txts.split(',');
-			var selct = `<option value=""></option>`;
-			for (i=0;i<einz.length;i++){
-				var selct = selct + `<option value="`+einz[i]+`"></option>`;
-				//console.log(einz[i]);
-			}
-			// ist dann nicth zu sehen, geht aber
-			//changeSelection.innerHTML = selct;
-					
-		}
-		
-		switch (status) {
-			case 'Pause':
-				console.log('Mahlzeit');
-				runningPauseTimer(status_full, status);
-			break;
-			case 'Stop':
-				showLastTimer(status_full, status);
-			break;
-			default:			
-				runningTimer(status_full, status);
-		}
-	}
-
-
-}
-
-function showLastTimer(last, art) {
-/*	var last_time = last.split('_');
-	console.log(last_time[1]);
-	console.log(last_time);
-	
-	var startDate = new Date(last_time[1]);
-	var endDate = new Date();
-  var differenz = (endDate.getTime() - startDate.getTime());
-  var worki_time = leadingZero(parseInt(differenz/1000/60/60)%24) +':'+ leadingZero(parseInt(differenz/1000/60)%60);
-	
-	addArtTime = document.getElementById('art');
-	addArtTime.innerHTML = art;
-	addArtTimeTime = document.getElementById('time');
-	addArtTimeTime.innerHTML = startDate.toLocaleTimeString() +"-"+ endDate.toLocaleTimeString()+" ("+ worki_time +")";
-*/
-}
-
-function runningPauseTimer(last, art) {
-	changetoStop = document.getElementById('pause_btn');
-	changetoStop.innerHTML = `<a href="" onclick="pauseEnde(event)"><button>Pause Ende</button></a>`;
-
-	console.log(Object.values(last)[0]);
-	var startDate = new Date(Object.values(last)[0]);
-	/*var endDate = new Date();
-  var differenz = (endDate.getTime() - startDate.getTime());
-  var pausi_time = leadingZero(parseInt(differenz/1000/60/60)%24) +':'+ leadingZero(parseInt(differenz/1000/60)%60);
-*/
-	var pausi_time = calcTime(Object.values(last)[0]);
-	console.log(pausi_time);
-	addArtTime = document.getElementById('art');
-	addArtTime.innerHTML = art;
-	addArtTimeTime = document.getElementById('pause');
-	addArtTimeTime.innerHTML = startDate.toLocaleTimeString() +" ("+ pausi_time +")";
-
-}
-function calcTime(start, stop='now') {
-	var startDate = new Date(start);
-	// if now sonst kein calc von diff
-	var endDate = new Date();
-	var differenz = (endDate.getTime() - startDate.getTime());
-	var worki_time = leadingZero(parseInt(differenz/1000/60/60)%24) +':'+ leadingZero(parseInt(differenz/1000/60)%60);
-	return worki_time;
-}
-//Fill leading 0
-function leadingZero(wert) {
-  if (wert < 10) return "0" + parseInt(wert);
-  else return parseInt(wert);
-}
-
-
-function pauseEnde(e) {
-	e.preventDefault(); 
-	starttimer(event);
-}
-
-function runningTimer(last, art) {
-	changetoStop = document.getElementById('start');
-	changetoStop.innerHTML = `<a href="" onclick="stoptimer(event)"><button>Stop</button></a>`;	
-
-	var startDate = new Date(Object.values(last)[0]);
-
-	var worki_time = calcTime(Object.values(last)[0]);	
-/*	var startDate = new Date(last.timestamp);
-	var endDate = new Date();
-  var differenz = (endDate.getTime() - startDate.getTime());
-  var worki_time = leadingZero(parseInt(differenz/1000/60/60)%24) +':'+ leadingZero(parseInt(differenz/1000/60)%60);
-*/	
-	addArtTime = document.getElementById('art');
-	addArtTime.innerHTML = art;
-	addArtTimeTime = document.getElementById('time');
-	addArtTimeTime.innerHTML = startDate.toLocaleTimeString() +" ("+ worki_time +")";
-	
-}
-
-async function starttimer(e) {
-	e.preventDefault(); 
-
-	var hand_text = document.getElementById("selecttext").value;
-	if (hand_text != '') {
-		var text = hand_text;
-		addHandText(hand_text);
-	} else {
-		var sel = document.getElementById("selectbox");
-		var text= sel.options[sel.selectedIndex].text;
-	}
-	changetoStop = document.getElementById('start');
-	changetoStop.innerHTML = `<a href="" onclick="stoptimer(event)"><button>Stop</button></a>`;
-
-	if(text == '') {text = 'Arbeit';}
-	time = new Date().toLocaleTimeString();
-	addArtTime = document.getElementById('art');
-	addArtTime.innerHTML = text;
-	addArtTimeTime = document.getElementById('time');
-	addArtTimeTime.innerHTML = time;
-
-	addToLocalStorage(text);
-	location.reload();
-	return false;
-}
-
-async function pausetimer(e) {
-	e.preventDefault(); 
-	
-	addToLocalStorage('Pause');
-	location.reload();
-	return false;
-}
-
-
-
-async function stoptimer(e){
-	e.preventDefault();
-	changetoStart = document.getElementById('start');
-	changetoStart.innerHTML = `<a href="" onclick="starttimer(event)"><button>Start</button></a>`;
-
-	time = new Date().toLocaleTimeString();
-	addArtTimeTime = document.getElementById('time');
-	addArtTimeTime.insertAdjacentHTML('beforeend', ' - ' + time);
-
-	addToLocalStorage('Stop');
-	location.reload();
-	return false;
-}
-
-function addToLocalStorage(art, time=0) {
-	if (time === 0) {time = new Date();raw_time = new Date();}	
-
-	var dateforDB = time.getFullYear() +'-'+ (1+ time.getMonth()) +'-'+ time.getDate();
-	var timeforDB = time.getHours()+':'+time.getMinutes()+':'+time.getSeconds();
-	//localStorage.setItem("hmstr_"+ raw_time +"_", todb_key +"_"+ todb_time +"_"+ art);
-	//console.log(localStorage);
-	
-	if (localStorage.length !== 0) {
-		
-//	if (localStorage.getItem("hamsterTimeData")['hmstr_'+dateforDB].length != 0) {
-		
-		var db = JSON.parse(localStorage.getItem("hamsterTimeData"));
-		//console.log(db);
-		var key = 'hmstr_'+dateforDB;
-
-//		var key = 'hmstr_2021-12-23';
-
-		if (!(db[key])) {db[key] = [];}
-//		db[key] = { "timestamp": raw_time , "job": art };
-		
-		db[key].push([{ "timestamp": raw_time  ,  "job": art }]);
-		localStorage.setItem("hamsterTimeData", JSON.stringify(db));
-	} else {
- 		var dbEntry = '{ "hmstr_'+dateforDB+'" : [[{ "timestamp":"'+raw_time.toISOString()+'" , "job":"'+art+'" }]] }';
-		const obj = JSON.parse(dbEntry);
-		//console.log(raw_time);
-		localStorage.setItem("hamsterTimeData", JSON.stringify(obj));
-	}
-
-}
-function addHandText(hand_text) {
-	if (localStorage.getItem("hmstr_00txt")) {
-		var txts = localStorage.getItem("hmstr_00txt");
-		var einz = txts.split(',');
-		
-		if(einz.indexOf(hand_text) == -1) {  
-			 var txts = txts + ',' + hand_text;
-		}
-	} else {
-		var txts = "Arbeit,Sun,Fun," + hand_text;
-	}
-	localStorage.setItem("hmstr_00txt_", txts);
-}
-
-
-//show the all the data saved in the local storage
-function show_history() {
-	var ret ='';
-	if (localStorage.length) {
-		var recent_times = JSON.parse(localStorage.getItem("hamsterTimeData"));
-		var first = 0; var last = 0; var recent = 0; var timeu = 0; var totl = 0;
-
-		Object.keys(recent_times).forEach(function(key) {
-	
-	 		recent_times[key].slice().reverse().forEach(function(job){
-				var ret_date = new Date(Object.values(Object.values(job)[0])[0]);
-				if (first != 0) {
-					recent = ret_date;
-					timeu = last - recent;
-				} 
-				first = 1;
-				last = ret_date;
-				var worki_time = leadingZero(parseInt(timeu/1000/60/60)%24) +':'+ leadingZero(parseInt(timeu/1000/60)%60);
-				ret = ret 
-				+ ret_date.toLocaleDateString() + " "
-				+ ret_date.toLocaleTimeString() + " "
-				+ Object.values(Object.values(job)[0])[1] + " (" + worki_time + ") " 
-				+ "<br>";
-			});
-		});
-		
-		
-	}
-	var histo = document.getElementById('history');
-	if(histo){
-		histo.insertAdjacentHTML('beforeend', ret);
-	}
-}
-//Let the clock tick, refresh every second 
-function displayClock(){
-	var display = new Date().toLocaleTimeString();
-	var clock = document.getElementById('clock');
-	if(clock){
-		clock.innerHTML = display + ' Uhr';
-	}
-	setTimeout(displayClock, 1000);  
-}
-
-</script>
 </html>
-
